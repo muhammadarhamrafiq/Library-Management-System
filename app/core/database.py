@@ -1,14 +1,23 @@
-import psycopg2
+from sqlalchemy import create_engine
+from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
 from app.core.settings import settings
 
+engine = create_engine(settings.database_url)
 
-def connect_to_database():
-    try:
-        connection = psycopg2.connect(settings.database_url)
+SessionLocal = sessionmaker(bind=engine)
 
-        return connection
-    except psycopg2.Error as e:
-        print("Error: Could not connect to the database.")
-        print(e)
-        return None
+
+class Base(DeclarativeBase):
+    pass
+
+
+def get_db():
+    with SessionLocal() as session:
+        try:
+            yield session
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            session.close()

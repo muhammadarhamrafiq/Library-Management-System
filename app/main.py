@@ -1,12 +1,12 @@
-from app.core.database import connect_to_database
+from sqlalchemy import text
+
+from app.core.database import SessionLocal
 
 
 def main():
-    db_connection = connect_to_database()
-    if db_connection:
-        print("Welcome, to the Library Management System!")
-    else:
-        print("Failed to connect to the database.")
+    with SessionLocal() as session:
+        result = session.execute(text("SELECT 1"))
+        print(result.scalar())
 
 
 if __name__ == "__main__":
