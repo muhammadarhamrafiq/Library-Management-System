@@ -14,9 +14,10 @@ import app.models
 # access to the values within the .ini file in use.
 config = context.config
 
+database_url = f"postgresql://{settings.POSTGRES_USER}:{settings.POSTGRES_PASSWORD}@{settings.POSTGRES_HOST}/{settings.POSTGRES_DB}"
 config.set_main_option(
     "sqlalchemy.url",
-    settings.database_url
+    database_url
 )
 
 # Interpret the config file for Python logging.
