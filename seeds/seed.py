@@ -10,7 +10,7 @@ from .seed_users import seed_users
 
 def seed_database():
     """Seed the database with initial data."""
-    database_url = f"postgresql://{settings.postgres_user}:{settings.postgres_password}@{settings.postgres_host}/{settings.postgres_db}"
+    database_url = f"postgresql+psycopg://{settings.postgres_user}:{settings.postgres_password}@{settings.postgres_host}/{settings.postgres_db}"
     engine = create_engine(url=database_url)
     LocalSession = sessionmaker(bind=engine)
 
