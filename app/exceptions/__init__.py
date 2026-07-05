@@ -3,13 +3,23 @@ from .auth import (
     InactiveUserError,
     InvalidCredentialsError,
 )
-from .base import AppError
-from .user import UserNotFoundError
+from .base import (
+    AppError,
+    BadRequestError,
+    ConflictError,
+    ForbiddenError,
+    NotFoundError,
+    ValidationError,
+)
 
 __all__ = [
     "InvalidCredentialsError",
     "InactiveUserError",
     "AuthenticationError",
-    "UserNotFoundError",
+    "NotFoundError",
     "AppError",
+    "ConflictError",
+    "ForbiddenError",
+    "BadRequestError",
+    "ValidationError",
 ]
