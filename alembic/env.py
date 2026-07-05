@@ -14,7 +14,7 @@ import app.models
 # access to the values within the .ini file in use.
 config = context.config
 
-database_url = f"postgresql+psycopg://{settings.POSTGRES_USER}:{settings.POSTGRES_PASSWORD}@{settings.POSTGRES_HOST}/{settings.POSTGRES_DB}"
+database_url = f"postgresql+psycopg://{settings.postgres_user}:{settings.postgres_password}@{settings.postgres_host}/{settings.postgres_db}"
 config.set_main_option(
     "sqlalchemy.url",
     database_url

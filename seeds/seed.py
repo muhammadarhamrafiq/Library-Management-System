@@ -1,8 +1,7 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
 from app.core.settings import settings
-from app.models import Book, User
 
 from .seed_books import seed_books
 from .seed_users import seed_users
@@ -14,10 +13,15 @@ def seed_database():
     engine = create_engine(url=database_url)
     LocalSession = sessionmaker(bind=engine)
 
+    if settings.environment == "production":
+        raise RuntimeError(
+            "Seeding the database is not allowed in production environment."
+        )
+
     with LocalSession() as session:
-        # Check if the database is already seeded
-        if session.query(User).first() or session.query(Book).first():
-            raise RuntimeError("Database is already seeded. Aborting seeding process.")
+        # Truncate the tables before seeding to avoid duplicate entries
+        session.execute(text("TRUNCATE TABLE books RESTART IDENTITY CASCADE;"))
+        session.execute(text("TRUNCATE TABLE users RESTART IDENTITY CASCADE;"))
 
         seed_users(session)
         seed_books(session)
