@@ -12,6 +12,8 @@ class LoanStatus(StrEnum):
     APPROVED = "approved"
     RETURNED = "returned"
     OVERDUE = "overdue"
+    REJECTED = "rejected"
+    CANCELED = "canceled"
 
 
 class Loan(Base):
