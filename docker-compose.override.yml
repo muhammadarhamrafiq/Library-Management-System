@@ -1,0 +1,25 @@
+services:
+  app:
+    develop:
+      watch:
+        - action: sync
+          path: .
+          target: /app
+
+        - action: rebuild
+          path: pyproject.toml
+
+        - action: rebuild
+          path: uv.lock
+
+    
+
+  postgres:
+    ports:
+      - "5432:5432"
+
+    
+
+
+volumes:
+  postgres-data:
