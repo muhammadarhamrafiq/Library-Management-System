@@ -1,4 +1,7 @@
-from app.cli.main import main
+from fastapi import FastAPI
 
-if __name__ == "__main__":
-    main()
+from app.routes import book_router
+
+app = FastAPI()
+
+app.include_router(book_router)
