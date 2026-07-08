@@ -1,17 +1,11 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import get_db
+from app.core.services import get_book_service
 from app.services import BookService
 
-router = APIRouter(prefix="/api/books", tags=["Books"])
-
-
-def get_book_service(session: Annotated[AsyncSession, Depends(get_db)]) -> BookService:
-    book_service = BookService(session)
-    return book_service
+router = APIRouter(prefix="/books", tags=["Books"])
 
 
 @router.get("/")
