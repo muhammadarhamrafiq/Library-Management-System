@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.services import AuthService, BookService
+from app.services import AuthService, BookService, LoanService, UserService
 
 from .database import get_db
 
@@ -24,3 +24,13 @@ def get_auth_service(session: Annotated[AsyncSession, Depends(get_db)]) -> AuthS
 def get_book_service(session: Annotated[AsyncSession, Depends(get_db)]) -> BookService:
     book_service = BookService(session)
     return book_service
+
+
+def get_loan_service(session: Annotated[AsyncSession, Depends(get_db)]) -> LoanService:
+    loan_service = LoanService(session)
+    return loan_service
+
+
+def get_user_service(session: Annotated[AsyncSession, Depends(get_db)]) -> UserService:
+    user_service = UserService(session)
+    return user_service

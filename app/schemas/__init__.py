@@ -1,5 +1,6 @@
 from .auth_schemas import LoginRequest, LoginResponse
 from .book_schemas import BookCreate, BookUpdate
+from .loan_schemas import LoanRequest
 from .user_schemas import UserCreate, UserUpdate
 
 __all__ = [
@@ -9,4 +10,5 @@ __all__ = [
     "UserUpdate",
     "LoginRequest",
     "LoginResponse",
+    "LoanRequest",
 ]

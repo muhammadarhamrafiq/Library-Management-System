@@ -80,12 +80,13 @@ class LoanService:
         await self._session.refresh(loan)
         return loan
 
-    async def get_loan(self, loan_id: int) -> Loan:
+    async def get_loan(self, loan_id: int, user_id: int | None = None) -> Loan:
         """
         Retrieve a loan by its ID.
 
         Arguments:
             loan_id(int): ID of the loan to retrieve.
+            user_id(int | None): ID of the user requesting the loan.
 
         Returns:
             Loan: The retrieved Loan object.
@@ -93,19 +94,28 @@ class LoanService:
         Raises:
             NotFoundError: If the loan doesn't exist.
         """
-        loan = await self._session.get(Loan, loan_id)
+        query = select(Loan).where(Loan.id == loan_id)
+
+        if user_id is not None:
+            query = query.where(Loan.user_id == user_id)
+
+        result = await self._session.execute(query)
+        loan = result.scalars().first()
+
         if not loan:
             raise NotFoundError(f"Loan with ID {loan_id} not found.")
         return loan
 
-    async def update_loan_status(self, loan_id: int, new_status: LoanStatus) -> Loan:
+    async def update_loan_status(
+        self, loan_id: int, new_status: LoanStatus, user_id: int | None = None
+    ) -> Loan:
         """
         Update loan status with proper validation and side effects.
 
         Arguments:
             loan_id(int): ID of the loan to update.
             new_status(LoanStatus): The new status to set.
-
+            user_id(int | None): ID of the user updating the loan.
         Returns:
             loan(Loan): The updated Loan object.
 
@@ -114,7 +124,7 @@ class LoanService:
             BadRequestError: If the status transition is invalid.
         """
 
-        loan = await self.get_loan(loan_id)
+        loan = await self.get_loan(loan_id, user_id=user_id)
         book_service = BookService(self._session)
         book = await book_service.get_book(loan.book_id, include_deleted=True)
 
@@ -150,6 +160,11 @@ class LoanService:
             if due_date_naive >= now_naive:
                 raise BadRequestError("Loan is not yet overdue.")
 
+        elif new_status == LoanStatus.CANCELED:
+            if loan.status != LoanStatus.PENDING:
+                raise BadRequestError(
+                    f"Cannot cancel loan: current status is '{loan.status.value}'."
+                )
         else:
             raise BadRequestError(f"Invalid status transition to '{new_status.value}'.")
 
@@ -157,32 +172,6 @@ class LoanService:
         await self._session.commit()
         await self._session.refresh(loan)
 
-        return loan
-
-    async def cancel_loan(self, loan_id: int) -> Loan:
-        """
-        Cancel a loan if it's still pending.
-
-        Arguments:
-            loan_id(int): ID of the loan to cancel.
-
-        Returns:
-            Loan: The updated Loan object with status set to 'rejected'.
-
-        Raises:
-            NotFoundError: If the loan doesn't exist.
-            BadRequestError: If the loan is not in a pending state.
-        """
-        loan = await self.get_loan(loan_id)
-
-        if loan.status != LoanStatus.PENDING:
-            raise BadRequestError(
-                f"Cannot cancel loan: current status is '{loan.status.value}'."
-            )
-
-        loan.status = LoanStatus.CANCELED
-        await self._session.commit()
-        await self._session.refresh(loan)
         return loan
 
     async def list_loans(

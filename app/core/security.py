@@ -84,6 +84,8 @@ def get_user_from_token(token: Annotated[str, Depends(auth_scheme)]) -> dict:
     try:
         payload = jwt.decode(jwt=token, key=settings.jwt_secret, algorithms=["HS256"])
 
+        payload["sub"] = int(payload["sub"])
+
         return payload
 
     except jwt.ExpiredSignatureError as e:
