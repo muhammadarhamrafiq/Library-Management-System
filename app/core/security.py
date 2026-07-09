@@ -95,7 +95,7 @@ def get_user_from_token(token: Annotated[str, Depends(auth_scheme)]) -> dict:
         raise AuthenticationError("Invalid token") from e
 
 
-def require_role(required_role: str):
+def require_role(*required_role: str):
     """
     Dependency function to enforce role-based access control.
 
@@ -108,7 +108,7 @@ def require_role(required_role: str):
 
     def role_checker(user: Annotated[dict, Depends(get_user_from_token)]) -> dict:
         user_role = user.get("role")
-        if user_role != required_role:
+        if user_role not in required_role:
             raise ForbiddenError("You do not have permission to access this resource.")
         return user
 

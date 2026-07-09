@@ -9,4 +9,4 @@ RUN pip install --no-cache-dir uv
 COPY . .
 
 RUN uv sync --no-dev
-CMD ["uv", "run", "--no-dev", "python", "-m", "app.main"]
+CMD ["uv", "run", "--no-dev", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

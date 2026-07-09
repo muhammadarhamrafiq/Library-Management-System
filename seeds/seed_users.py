@@ -1,14 +1,14 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import hash_password
 from app.models import Role, User
 
 
-def seed_users(session: Session):
+def seed_users(session: AsyncSession):
     """
     Seed users to database
     Arguments:
-        session (Session): The SQLAlchemy session to use for database operations.
+        session (AsyncSession): The SQLAlchemy session to use for database operations.
     Returns:
         None
     """
