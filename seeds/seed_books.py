@@ -1,14 +1,14 @@
 # app/seeders/book_seeder.py
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import Book
 
 
-def seed_books(session: Session):
+def seed_books(session: AsyncSession):
     """
     Seed books to database
     Arguments:
-        session (Session): The SQLAlchemy session to use for database operations.
+        session (AsyncSession): The SQLAlchemy session to use for database operations.
     Returns:
         None
     """
@@ -17,9 +17,10 @@ def seed_books(session: Session):
         {
             "title": "The Hobbit",
             "author": "J.R.R. Tolkien",
-            "isbn": "978-0547928227",
+            "isbn": "9780547928227",
             "description": "A hobbit goes on an unexpected adventure "
             "with dwarves and a wizard.",
+            "price": 12.99,
             "publisher": "Houghton Mifflin Harcourt",
             "published_year": 1937,
             "total_copies": 5,
@@ -28,9 +29,10 @@ def seed_books(session: Session):
         {
             "title": "1984",
             "author": "George Orwell",
-            "isbn": "978-0451524935",
+            "isbn": "9780451524935",
             "description": "A dystopian novel about totalitarian "
             "government surveillance.",
+            "price": 9.99,
             "publisher": "Signet Classic",
             "published_year": 1949,
             "total_copies": 8,
@@ -39,9 +41,10 @@ def seed_books(session: Session):
         {
             "title": "To Kill a Mockingbird",
             "author": "Harper Lee",
-            "isbn": "978-0061120084",
+            "isbn": "9780061120084",
             "description": "A story of racial injustice and moral "
             "growth in the American South.",
+            "price": 7.99,
             "publisher": "Harper Perennial",
             "published_year": 1960,
             "total_copies": 6,
@@ -50,9 +53,10 @@ def seed_books(session: Session):
         {
             "title": "The Great Gatsby",
             "author": "F. Scott Fitzgerald",
-            "isbn": "978-0743273565",
+            "isbn": "9780743273565",
             "description": "A tale of wealth, love, and the "
             "American Dream in the Jazz Age.",
+            "price": 10.99,
             "publisher": "Scribner",
             "published_year": 1925,
             "total_copies": 4,
@@ -61,9 +65,10 @@ def seed_books(session: Session):
         {
             "title": "Dune",
             "author": "Frank Herbert",
-            "isbn": "978-0441172719",
+            "isbn": "9780441172719",
             "description": "A science fiction epic about politics, "
             "religion, and ecology on a desert planet.",
+            "price": 15.99,
             "publisher": "Ace Books",
             "published_year": 1965,
             "total_copies": 7,
@@ -75,5 +80,4 @@ def seed_books(session: Session):
         book = Book(**book_data)
         session.add(book)
 
-    session.commit()
     print("Books seeded successfully.")
