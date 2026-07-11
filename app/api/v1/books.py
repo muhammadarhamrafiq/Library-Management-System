@@ -40,6 +40,9 @@ async def list_books(
     skip: int = 0,
     limit: int = 10,
 ):
+    """
+    Endpoint to list books in the library with optional filtering and sorting.
+    """
     books = await book_service.list_books(
         search_query=search_query,
         author=author,
@@ -91,6 +94,9 @@ async def get_book(
     book_service: Annotated[BookService, Depends(get_book_service)],
     book_id: int,
 ):
+    """
+    Endpoint to retrieve a book by its ID.
+    """
     book = await book_service.get_book(book_id)
     return book
 

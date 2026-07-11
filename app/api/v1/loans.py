@@ -133,7 +133,8 @@ async def approve_loan(
     loan_id: int,
 ):
     """
-    Approve a loan request
+    Approve a loan request.
+    Requires user admin or librarian role to access this endpoint.
     """
     loan = await loan_service.update_loan_status(
         loan_id=loan_id, new_status=LoanStatus.APPROVED
@@ -149,6 +150,7 @@ async def reject_loan(
 ):
     """
     Reject a loan request
+    Requires user admin or librarian role to access this endpoint.
     """
     loan = await loan_service.update_loan_status(
         loan_id=loan_id, new_status=LoanStatus.REJECTED

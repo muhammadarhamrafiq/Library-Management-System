@@ -1,5 +1,7 @@
 from pydantic import BaseModel, EmailStr, Field
 
+from app.models import Role
+
 
 class UserCreate(BaseModel):
     email: EmailStr
@@ -15,3 +17,7 @@ class UserUpdate(BaseModel):
 class ChangePasswordRequest(BaseModel):
     current_password: str
     new_password: str
+
+
+class ChangeRoleRequest(BaseModel):
+    role: Role
