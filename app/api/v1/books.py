@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, status
 
 from app.core.security import require_role
 from app.core.services import get_book_service
@@ -11,7 +11,7 @@ from app.services import BookService
 router = APIRouter(prefix="/books", tags=["Books"])
 
 
-@router.post("")
+@router.post("", status_code=status.HTTP_201_CREATED)
 async def create_book(
     book_service: Annotated[BookService, Depends(get_book_service)],
     book_data: BookCreate,

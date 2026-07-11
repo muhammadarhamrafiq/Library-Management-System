@@ -1,6 +1,8 @@
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
+from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.exceptions import BadRequestError, ConflictError, NotFoundError
@@ -10,6 +12,8 @@ from .book_service import BookService
 from .user_service import UserService
 
 LOAN_DURATION_DAYS = 14
+MAX_RENEWALS = 2
+FINE_PER_DAY_LATE = Decimal("0.50")
 
 
 class LoanService:
@@ -48,7 +52,7 @@ class LoanService:
         await user_service.get_user(user_id)
 
         book_service = BookService(self._session)
-        book = await book_service.get_book(book_id)
+        book = await book_service.get_book(book_id, for_update=True)
 
         if book.available_copies <= 0:
             raise BadRequestError("No available copies of the book.")
@@ -71,8 +75,7 @@ class LoanService:
         loan = Loan(
             user_id=user_id,
             book_id=book_id,
-            due_date=datetime.now(UTC).replace(tzinfo=None)
-            + timedelta(days=LOAN_DURATION_DAYS),
+            due_date=datetime.now(UTC) + timedelta(days=LOAN_DURATION_DAYS),
             status=LoanStatus.PENDING,
         )
         self._session.add(loan)
@@ -126,7 +129,7 @@ class LoanService:
 
         loan = await self.get_loan(loan_id, user_id=user_id)
         book_service = BookService(self._session)
-        book = await book_service.get_book(loan.book_id, include_deleted=True)
+        book = await book_service.get_book(loan.book_id, for_update=True)
 
         if new_status == LoanStatus.APPROVED:
             if loan.status != LoanStatus.PENDING:
@@ -145,19 +148,16 @@ class LoanService:
             book.available_copies += 1
             loan.returned_date = datetime.now(UTC)
 
+            if loan.returned_date > loan.due_date:
+                days_late = (loan.returned_date - loan.due_date).days
+                loan.fine_amount = Decimal(days_late) * FINE_PER_DAY_LATE
+
         elif new_status == LoanStatus.OVERDUE:
             if loan.status != LoanStatus.APPROVED:
                 raise BadRequestError(
                     f"Cannot mark as overdue: current status is '{loan.status.value}'."
                 )
-
-            now_naive = datetime.now(UTC).replace(tzinfo=None)
-            due_date_naive = (
-                loan.due_date.replace(tzinfo=None)
-                if loan.due_date.tzinfo
-                else loan.due_date
-            )
-            if due_date_naive >= now_naive:
+            if loan.due_date >= datetime.now(UTC):
                 raise BadRequestError("Loan is not yet overdue.")
 
         elif new_status == LoanStatus.CANCELED:
@@ -165,10 +165,97 @@ class LoanService:
                 raise BadRequestError(
                     f"Cannot cancel loan: current status is '{loan.status.value}'."
                 )
+
+        elif new_status == LoanStatus.REJECTED:
+            if loan.status != LoanStatus.PENDING:
+                raise BadRequestError(
+                    f"Cannot reject loan: current status is '{loan.status.value}'."
+                )
+
         else:
             raise BadRequestError(f"Invalid status transition to '{new_status.value}'.")
 
         loan.status = new_status
+        await self._session.commit()
+        await self._session.refresh(loan)
+
+        return loan
+
+    async def renew_loan(self, loan_id: int, user_id: int | None = None) -> Loan:
+        """
+        Renew an active loan, extending its due date.
+
+        Arguments:
+            loan_id(int): ID of the loan to renew.
+            user_id(int | None): ID of the user renewing the loan.
+
+        Returns:
+            Loan: The renewed Loan object.
+
+        Raises:
+            NotFoundError: If the loan doesn't exist.
+            BadRequestError:
+                If the loan isn't currently approved.
+                If the loan has already hit the renewal limit.
+                If another user has a pending request for this book.
+        """
+        loan = await self.get_loan(loan_id, user_id=user_id)
+
+        if loan.status != LoanStatus.APPROVED:
+            raise BadRequestError(
+                f"Cannot renew loan: current status is '{loan.status.value}'."
+            )
+
+        if loan.renew_count >= MAX_RENEWALS:
+            raise BadRequestError(
+                f"Cannot renew loan: maximum of {MAX_RENEWALS} renewals reached."
+            )
+
+        waiting = await self._session.execute(
+            select(Loan).where(
+                Loan.book_id == loan.book_id,
+                Loan.status == LoanStatus.PENDING,
+            )
+        )
+        if waiting.scalars().first():
+            raise BadRequestError(
+                "Cannot renew loan: another user is waiting for this book."
+            )
+
+        loan.due_date = loan.due_date + timedelta(days=LOAN_DURATION_DAYS)
+        loan.renew_count += 1
+
+        await self._session.commit()
+        await self._session.refresh(loan)
+
+        return loan
+
+    async def pay_fine(self, loan_id: int) -> Loan:
+        """
+        Mark a loan's outstanding fine as paid.
+
+        Arguments:
+            loan_id(int): ID of the loan whose fine is being paid.
+
+        Returns:
+            Loan: The updated Loan object.
+
+        Raises:
+            NotFoundError: If the loan doesn't exist.
+            BadRequestError:
+                If there is no outstanding fine.
+                If the fine has already been paid.
+        """
+        loan = await self.get_loan(loan_id)
+
+        if loan.fine_amount <= 0:
+            raise BadRequestError("This loan has no outstanding fine.")
+
+        if loan.fine_paid:
+            raise BadRequestError("This loan's fine has already been paid.")
+
+        loan.fine_paid = True
+
         await self._session.commit()
         await self._session.refresh(loan)
 
@@ -179,7 +266,10 @@ class LoanService:
         user_id: int | None = None,
         status: LoanStatus | None = None,
         book_id: int | None = None,
-    ) -> list[Loan]:
+        outstanding_fine: bool | None = None,
+        skip: int = 0,
+        limit: int = 10,
+    ) -> dict[str, Any]:
         """
         List loans based on filters.
 
@@ -187,13 +277,21 @@ class LoanService:
             user_id(int | None): Filter by user ID.
             status(LoanStatus | None): Filter by loan status.
             book_id(int | None): Filter by book ID.
-
+            outstanding_fine(bool | None): Filter by outstanding fine.
+            skip(int): Number of records to skip for pagination.
+            limit(int): Maximum number of records to return for pagination.
         Returns:
-            list[Loan]: List of Loan objects matching the filters.
+            dict[str, Any]: A dictionary containing the list of Loan objects and pagination information.
 
         Raises:
             None
         """
+
+        if skip < 0:
+            raise BadRequestError("skip must be >= 0")
+        if limit < 1 or limit > 100:
+            raise BadRequestError("limit must be between 1 and 100")
+
         query = select(Loan)
 
         if user_id is not None:
@@ -202,6 +300,28 @@ class LoanService:
             query = query.where(Loan.status == status)
         if book_id is not None:
             query = query.where(Loan.book_id == book_id)
+        if outstanding_fine is not None:
+            if outstanding_fine:
+                query = query.where(Loan.fine_amount > 0, Loan.fine_paid.is_(False))
+            else:
+                query = query.where(
+                    (Loan.fine_amount == 0) | (Loan.fine_paid.is_(True))
+                )
 
-        result = await self._session.execute(query)
-        return result.scalars().all()
+        result = await self._session.execute(query.offset(skip).limit(limit))
+        loans = result.scalars().all()
+
+        count_query = select(func.count()).select_from(query.subquery())
+        total_result = await self._session.execute(count_query)
+        total_count = total_result.scalar()
+
+        return {
+            "data": loans,
+            "total": total_count,
+            "skip": skip,
+            "limit": limit,
+            "page": (skip // limit) + 1 if limit > 0 else 1,
+            "total_pages": (total_count + limit - 1) // limit if limit > 0 else 1,
+            "has_next": skip + limit < total_count,
+            "has_previous": skip > 0,
+        }
