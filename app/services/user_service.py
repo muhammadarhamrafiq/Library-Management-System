@@ -97,7 +97,7 @@ class UserService:
         search_query: str | None = None,
         full_name: str | None = None,
         email: str | None = None,
-        role: str | None = None,
+        role: Role | None = None,
         is_active: bool | None = None,
         sortBy: str | None = None,
         sortOrder: str = "asc",
@@ -111,7 +111,7 @@ class UserService:
             search_query(str | None): Search across full_name and email.
             full_name(str | None): Filter by full name.
             email(str | None): Filter by email.
-            role(str | None): Filter by role.
+            role(Role | None): Filter by role.
             is_active(bool | None): Filter by active status.
             sortBy(str | None):
                 Field to sort by.
@@ -249,11 +249,7 @@ class UserService:
             InactiveUserError: If the user account is inactive.
             InvalidCredentialsError: If the current password is incorrect.
         """
-        result = await self._session.execute(select(User).where(User.id == user_id))
-        user: User | None = result.scalar_one_or_none()
-
-        if not user:
-            raise NotFoundError("User not found")
+        user = await self.get_user(user_id, include_inactive=True)
 
         if not user.is_active:
             raise InactiveUserError("User account is inactive")
@@ -287,6 +283,17 @@ class UserService:
 
         if not user.is_active:
             raise BadRequestError(f"User with id {user_id} is already inactive.")
+
+        if user.role == Role.ADMIN:
+            active_admin_count = await self._session.execute(
+                select(func.count())
+                .select_from(User)
+                .where(User.role == Role.ADMIN, User.is_active.is_(True))
+            )
+            if active_admin_count.scalar() <= 1:
+                raise BadRequestError(
+                    "Cannot deactivate the last active admin account."
+                )
 
         user.is_active = False
         await self._session.commit()
@@ -330,15 +337,19 @@ class UserService:
 
         Raises:
             NotFoundError: If the user with the specified id does not exist.
-            BadRequestError: If the provided role is invalid.
         """
-        user = await self.get_user(user_id)
+        user = await self.get_user(user_id, include_inactive=True)
 
-        VALID_ROLES = {Role.ADMIN, Role.MEMBER, Role.LIBRARIAN}
-        if role not in VALID_ROLES:
-            raise BadRequestError(
-                f"Invalid role. Must be one of: {[r.value for r in VALID_ROLES]}"
+        if user.role == Role.ADMIN and role != Role.ADMIN:
+            active_admin_count = await self._session.execute(
+                select(func.count())
+                .select_from(User)
+                .where(User.role == Role.ADMIN, User.is_active.is_(True))
             )
+            if active_admin_count.scalar() <= 1:
+                raise BadRequestError(
+                    "Cannot change the role of the last active admin account."
+                )
 
         user.role = role
         await self._session.commit()

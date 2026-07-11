@@ -1,10 +1,11 @@
 from datetime import UTC, datetime
+from typing import Any
 
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.exceptions import BadRequestError, ConflictError, NotFoundError
-from app.models import Book
+from app.models import Book, Loan, LoanStatus
 from app.schemas import BookCreate, BookUpdate
 
 
@@ -54,12 +55,17 @@ class BookService:
         await self._session.refresh(book)
         return book
 
-    async def get_book(self, book_id: int, include_deleted: bool = False) -> Book:
+    async def get_book(
+        self, book_id: int, deleted: bool = False, for_update: bool = False
+    ) -> Book:
         """
         Retrieve a book by its ID.
 
         Arguments:
             book_id(int): The ID of the book to retrieve.
+            deleted(bool):
+                Whether to include deleted books in the search. Default is False.
+            for_update(bool): Whether to lock the book for update. Default is False.
 
         Returns:
             book(Book): The Book object with the specified ID.
@@ -69,8 +75,13 @@ class BookService:
         """
         query = select(Book).where(Book.id == book_id)
 
-        if not include_deleted:
+        if deleted:
+            query = query.where(Book.deleted_at.is_not(None))
+        else:
             query = query.where(Book.deleted_at.is_(None))
+
+        if for_update:
+            query = query.with_for_update()
 
         result = await self._session.execute(query)
         book = result.scalar_one_or_none()
@@ -93,8 +104,8 @@ class BookService:
         sortOrder: str = "asc",
         skip: int = 0,
         limit: int = 10,
-        include_deleted: bool = False,
-    ) -> dict[str, any]:
+        deleted: bool = False,
+    ) -> dict[str, Any]:
         """
         List books with optional filtering, sorting, and pagination.
 
@@ -111,6 +122,7 @@ class BookService:
             skip(int): The number of records to skip for pagination. Default is 0.
             limit(int): The maximum number of records to return. Default is 10.
             include_deleted(bool): include deleted books in results. Default is False.
+            deleted(bool): Filter books by deletion status. Default is False.
 
         Returns:
             dict[str, any]: A dictionary containing the paginated results and metadata.
@@ -126,31 +138,23 @@ class BookService:
 
         query = select(Book)
 
-        # Apply Deleted Filter
-        if not include_deleted:
+        # Apply Soft Deleted Search Filter
+        if deleted:
+            query = query.where(Book.deleted_at.is_not(None))
+        else:
             query = query.where(Book.deleted_at.is_(None))
 
-        # Apply Author Filter
+        # Apply Filters
         if author:
             query = query.where(Book.author.ilike(f"%{author}%"))
-
-        # Apply Title Filter
         if title:
             query = query.where(Book.title.ilike(f"%{title}%"))
-
-        # Apply Publisher Filter
         if publisher:
             query = query.where(Book.publisher.ilike(f"%{publisher}%"))
-
-        # Apply Published Year Filter
         if published_year is not None:
             query = query.where(Book.published_year == published_year)
-
-        # Apply ISBN Filter
         if isbn:
             query = query.where(Book.isbn == isbn)
-
-        # Apply Availability Filter
         if available is not None:
             if available:
                 query = query.where(Book.available_copies > 0)
@@ -223,7 +227,7 @@ class BookService:
             ConflictError: If a book with the same ISBN already exists.
 
         """
-        book = await self.get_book(book_id)
+        book = await self.get_book(book_id, deleted=False, for_update=True)
 
         update_data = book_data.model_dump(exclude_unset=True)
 
@@ -277,10 +281,20 @@ class BookService:
             NotFoundError: If the book with the specified ID does not exist.
             BadRequestError: If the book has borrowed copies and cannot be deleted.
         """
-        book = await self.get_book(book_id, include_deleted=True)
+        book = await self.get_book(book_id, deleted=False, for_update=True)
 
         if book.available_copies < book.total_copies:
             raise BadRequestError("Cannot delete a book that has borrowed copies.")
+
+        # Checking if the book has any pending loans
+        result = await self._session.execute(
+            select(Loan).where(
+                Loan.book_id == book_id, Loan.status == LoanStatus.PENDING
+            )
+        )
+
+        for loan in result.scalars().all():
+            loan.status = LoanStatus.REJECTED
 
         book.deleted_at = datetime.now(UTC)
 
@@ -304,10 +318,7 @@ class BookService:
             BadRequestError: If the book is not deleted.
             ConflictError: If a book with the same ISBN already exists.
         """
-        book = await self.get_book(book_id, include_deleted=True)
-
-        if book.deleted_at is None:
-            raise BadRequestError(f"Book with ID {book_id} is not deleted.")
+        book = await self.get_book(book_id, deleted=True, for_update=True)
 
         if book.isbn:
             existing_book = await self._session.execute(

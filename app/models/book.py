@@ -1,6 +1,7 @@
 from datetime import datetime
+from decimal import Decimal
 
-from sqlalchemy import DateTime, Index, func, text
+from sqlalchemy import DateTime, Index, Numeric, func, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -14,6 +15,7 @@ class Book(Base):
     author: Mapped[str] = mapped_column(index=True)
     isbn: Mapped[str | None] = mapped_column(index=True, nullable=True)
     description: Mapped[str | None] = mapped_column(nullable=True)
+    price: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True)
 
     publisher: Mapped[str | None] = mapped_column(nullable=True)
     published_year: Mapped[int | None] = mapped_column(nullable=True)

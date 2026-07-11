@@ -8,6 +8,7 @@ class BookCreate(BaseModel):
     author: str = Field(min_length=1, max_length=255)
     isbn: str | None = Field(default=None, pattern=r"^\d{13}$")
     description: str | None = Field(default=None, max_length=2000)
+    price: float | None = Field(default=None, gt=0)
     publisher: str | None = Field(default=None, max_length=255)
     published_year: int | None = Field(
         default=None,
@@ -21,6 +22,7 @@ class BookUpdate(BaseModel):
     author: str | None = Field(default=None, min_length=1, max_length=255)
     isbn: str | None = Field(default=None, pattern=r"^\d{13}$")
     description: str | None = Field(default=None, max_length=2000)
+    price: float | None = Field(default=None, gt=0)
     publisher: str | None = Field(default=None, max_length=255)
     published_year: int | None = Field(
         default=None,
