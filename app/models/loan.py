@@ -1,7 +1,8 @@
 from datetime import datetime
+from decimal import Decimal
 from enum import StrEnum
 
-from sqlalchemy import DateTime, ForeignKey, func
+from sqlalchemy import DateTime, ForeignKey, Numeric, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -24,8 +25,16 @@ class Loan(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     book_id: Mapped[int] = mapped_column(ForeignKey("books.id"), nullable=False)
 
-    due_date: Mapped[datetime] = mapped_column(nullable=False)
-    returned_date: Mapped[datetime] = mapped_column(nullable=True)
+    due_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    returned_date: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+    renew_count: Mapped[int] = mapped_column(nullable=False, default=0)
+    fine_amount: Mapped[Decimal] = mapped_column(
+        Numeric(10, 2), nullable=False, default=Decimal("0.00")
+    )
+    fine_paid: Mapped[bool] = mapped_column(nullable=False, default=False)
 
     status: Mapped[LoanStatus] = mapped_column(
         nullable=False, default=LoanStatus.PENDING

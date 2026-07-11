@@ -5,7 +5,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.exceptions import BadRequestError, ConflictError, NotFoundError
-from app.models import Book
+from app.models import Book, Loan, LoanStatus
 from app.schemas import BookCreate, BookUpdate
 
 
@@ -285,6 +285,16 @@ class BookService:
 
         if book.available_copies < book.total_copies:
             raise BadRequestError("Cannot delete a book that has borrowed copies.")
+
+        # Checking if the book has any pending loans
+        result = await self._session.execute(
+            select(Loan).where(
+                Loan.book_id == book_id, Loan.status == LoanStatus.PENDING
+            )
+        )
+
+        for loan in result.scalars().all():
+            loan.status = LoanStatus.REJECTED
 
         book.deleted_at = datetime.now(UTC)
 

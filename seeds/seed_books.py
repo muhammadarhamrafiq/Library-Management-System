@@ -20,6 +20,7 @@ def seed_books(session: AsyncSession):
             "isbn": "9780547928227",
             "description": "A hobbit goes on an unexpected adventure "
             "with dwarves and a wizard.",
+            "price": 12.99,
             "publisher": "Houghton Mifflin Harcourt",
             "published_year": 1937,
             "total_copies": 5,
@@ -31,6 +32,7 @@ def seed_books(session: AsyncSession):
             "isbn": "9780451524935",
             "description": "A dystopian novel about totalitarian "
             "government surveillance.",
+            "price": 9.99,
             "publisher": "Signet Classic",
             "published_year": 1949,
             "total_copies": 8,
@@ -42,6 +44,7 @@ def seed_books(session: AsyncSession):
             "isbn": "9780061120084",
             "description": "A story of racial injustice and moral "
             "growth in the American South.",
+            "price": 7.99,
             "publisher": "Harper Perennial",
             "published_year": 1960,
             "total_copies": 6,
@@ -53,6 +56,7 @@ def seed_books(session: AsyncSession):
             "isbn": "9780743273565",
             "description": "A tale of wealth, love, and the "
             "American Dream in the Jazz Age.",
+            "price": 10.99,
             "publisher": "Scribner",
             "published_year": 1925,
             "total_copies": 4,
@@ -64,6 +68,7 @@ def seed_books(session: AsyncSession):
             "isbn": "9780441172719",
             "description": "A science fiction epic about politics, "
             "religion, and ecology on a desert planet.",
+            "price": 15.99,
             "publisher": "Ace Books",
             "published_year": 1965,
             "total_copies": 7,
