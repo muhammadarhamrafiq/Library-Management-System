@@ -281,7 +281,8 @@ class LoanService:
             skip(int): Number of records to skip for pagination.
             limit(int): Maximum number of records to return for pagination.
         Returns:
-            dict[str, Any]: A dictionary containing the list of Loan objects and pagination information.
+            dict[str, Any]: A dictionary containing the list of Loan objects
+            and pagination information.
 
         Raises:
             None
