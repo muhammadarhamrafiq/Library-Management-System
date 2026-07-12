@@ -19,8 +19,6 @@ services:
     ports:
       - "5432:5432"
 
-    
-
-
-volumes:
-  postgres-data:
+  redis:
+    ports:
+      - "6379:6379"
