@@ -5,22 +5,10 @@ from fastapi import APIRouter, Depends
 from app.core.security import get_user_from_token, require_role
 from app.core.services import get_user_service
 from app.models import Role
-from app.schemas import ChangePasswordRequest, ChangeRoleRequest, UserCreate, UserUpdate
+from app.schemas import ChangePasswordRequest, ChangeRoleRequest, UserUpdate
 from app.services import UserService
 
 router = APIRouter(prefix="/user", tags=["User"])
-
-
-@router.post("/register")
-async def register_user(
-    user_data: UserCreate,
-    user_service: Annotated[UserService, Depends(get_user_service)],
-):
-    """
-    Endpoint to register a new user.
-    """
-    user = await user_service.register_user(user_data)
-    return user
 
 
 @router.get("")

@@ -11,6 +11,9 @@ class Settings(BaseSettings):
 
     jwt_secret: str
 
+    redis_host: str
+    redis_port: int
+
     model_config: SettingsConfigDict = SettingsConfigDict(
         env_file=".env", case_sensitive=False, env_file_encoding="utf-8", extra="ignore"
     )

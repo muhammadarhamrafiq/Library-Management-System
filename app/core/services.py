@@ -1,11 +1,13 @@
 from typing import Annotated
 
 from fastapi import Depends
+from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.services import AuthService, BookService, LoanService, UserService
+from app.services import AuthService, BookService, LoanService, OTPService, UserService
 
 from .database import get_db
+from .redis import get_redis
 
 
 def get_auth_service(session: Annotated[AsyncSession, Depends(get_db)]) -> AuthService:
@@ -34,3 +36,11 @@ def get_loan_service(session: Annotated[AsyncSession, Depends(get_db)]) -> LoanS
 def get_user_service(session: Annotated[AsyncSession, Depends(get_db)]) -> UserService:
     user_service = UserService(session)
     return user_service
+
+
+def get_otp_service(
+    redis: Annotated[Redis, Depends(get_redis)],
+    session: Annotated[AsyncSession, Depends(get_db)],
+):
+    otp_service = OTPService(redis, session)
+    return otp_service
