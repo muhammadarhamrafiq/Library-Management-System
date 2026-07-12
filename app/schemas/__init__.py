@@ -1,7 +1,7 @@
 from .auth_schemas import LoginRequest, LoginResponse
 from .book_schemas import BookCreate, BookUpdate
 from .loan_schemas import LoanRequest
-from .otp_schemas import VerifyOTPRequest
+from .otp_schemas import ConfirmResetRequest, ResetRequest, VerifyOTPRequest
 from .user_schemas import (
     ChangePasswordRequest,
     ChangeRoleRequest,
@@ -20,4 +20,6 @@ __all__ = [
     "ChangePasswordRequest",
     "ChangeRoleRequest",
     "VerifyOTPRequest",
+    "ConfirmResetRequest",
+    "ResetRequest",
 ]
