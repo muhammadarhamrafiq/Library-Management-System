@@ -1,11 +1,10 @@
 import asyncio
 
 from celery import Celery
-from celery.schedules import crontab
 
 from app.core.database import SessionLocal
 from app.core.settings import settings
-from app.services import EmailService, LoanService
+from app.services import EmailService, LoanService, StatisticsService
 
 broker_url = f"redis://{settings.redis_host}:{settings.redis_port}/0"
 
@@ -72,6 +71,11 @@ def process_overdue_loans():
     asyncio.run(_process_overdue_loans())
 
 
+@app.task(queue="report")
+def update_daily_statistics():
+    asyncio.run(_update_daily_statistics())
+
+
 async def _process_overdue_loans():
     async with SessionLocal() as session:
         loan_service = LoanService(session)
@@ -83,11 +87,23 @@ async def _process_overdue_loans():
                 loan.id,
                 loan.fine_amount,
             )
+    await session.bind.dispose()
+
+
+async def _update_daily_statistics() -> None:
+    async with SessionLocal() as session:
+        statistics_service = StatisticsService(session)
+        await statistics_service.update_daily_statistics()
+    await session.bind.dispose()
 
 
 app.conf.beat_schedule = {
     "process-overdue-loans": {
         "task": process_overdue_loans.name,
-        "schedule": crontab(hour=7, minute=0),
-    }
+        "schedule": 30,
+    },
+    "update-daily-statistics": {
+        "task": update_daily_statistics.name,
+        "schedule": 30,
+    },
 }

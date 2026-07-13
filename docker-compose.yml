@@ -57,7 +57,7 @@ services:
     env_file:
       - .env
 
-    command: ["uv", "run", "--no-dev", "celery", "-A", "app.workers.tasks", "worker", "--loglevel=info", "-Q", "otp,email"]
+    command: ["uv", "run", "--no-dev", "celery", "-A", "app.workers.tasks", "worker", "--loglevel=info", "-Q", "otp,email,maintenance,report"]
 
     depends_on:
       redis:
