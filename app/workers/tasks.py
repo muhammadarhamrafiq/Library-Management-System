@@ -1,6 +1,8 @@
 import asyncio
+from datetime import UTC, datetime
 
 from celery import Celery
+from celery.schedules import crontab
 
 from app.core.database import SessionLocal
 from app.core.settings import settings
@@ -76,6 +78,11 @@ def update_daily_statistics():
     asyncio.run(_update_daily_statistics())
 
 
+@app.task(queue="report")
+def generate_monthly_report():
+    asyncio.run(_generate_monthly_report())
+
+
 async def _process_overdue_loans():
     async with SessionLocal() as session:
         loan_service = LoanService(session)
@@ -97,13 +104,31 @@ async def _update_daily_statistics() -> None:
     await session.bind.dispose()
 
 
+async def _generate_monthly_report() -> None:
+    async with SessionLocal() as session:
+        report_service = StatisticsService(session)
+
+        today = datetime.now(UTC).date()
+        # report covers the month that just ended
+        year, month = (
+            (today.year, today.month - 1) if today.month > 1 else (today.year - 1, 12)
+        )
+
+        report_data = await report_service.generate_monthly_report(year, month)
+
+        # TODO: once frontend/SSE is in place, this is where we'd push the
+        # completion event and/or generate the downloadable file for retrieval.
+        print(f"Monthly report generated: {report_data.model_dump()}")
+    await session.bind.dispose()
+
+
 app.conf.beat_schedule = {
     "process-overdue-loans": {
         "task": process_overdue_loans.name,
-        "schedule": 30,
+        "schedule": crontab(hour=7, minute=0),
     },
     "update-daily-statistics": {
         "task": update_daily_statistics.name,
-        "schedule": 30,
+        "schedule": crontab(hour="*/4", minute=0),
     },
 }
