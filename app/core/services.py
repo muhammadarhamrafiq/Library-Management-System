@@ -4,7 +4,14 @@ from fastapi import Depends
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.services import AuthService, BookService, LoanService, OTPService, UserService
+from app.services import (
+    AuthService,
+    BookService,
+    LoanService,
+    OTPService,
+    StatisticsService,
+    UserService,
+)
 
 from .database import get_db
 from .redis import get_redis
@@ -44,3 +51,8 @@ def get_otp_service(
 ):
     otp_service = OTPService(redis, session)
     return otp_service
+
+
+def get_stats_service(session: Annotated[AsyncSession, Depends(get_db)]):
+    stats_service = StatisticsService(session)
+    return stats_service

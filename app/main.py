@@ -1,6 +1,13 @@
 from fastapi import FastAPI
 
-from app.api.v1 import auth_router, books_router, loans_router, otp_router, users_router
+from app.api.v1 import (
+    auth_router,
+    books_router,
+    loans_router,
+    otp_router,
+    stats_router,
+    users_router,
+)
 from app.core.settings import settings
 
 is_dev = settings.environment == "development"
@@ -15,3 +22,4 @@ app.include_router(books_router, prefix="/api/v1")
 app.include_router(loans_router, prefix="/api/v1")
 app.include_router(users_router, prefix="/api/v1")
 app.include_router(otp_router, prefix="/api/v1")
+app.include_router(stats_router, prefix="/api/v1")
