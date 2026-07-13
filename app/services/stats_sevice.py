@@ -78,6 +78,17 @@ class StatisticsService:
 
         await self.session.commit()
 
+    async def get_daily_stats(self) -> DailyStatistics:
+        """
+        Retrieves the latest daily statistics snapshot.
+        """
+        today = datetime.now(UTC).date()
+        stats = await self.session.get(DailyStatistics, today)
+        if stats is None:
+            await self.update_daily_statistics()
+            stats = await self.session.get(DailyStatistics, today)
+        return stats
+
     async def generate_monthly_report(self, year: int, month: int) -> MonthlyReportData:
         """
         Aggregates daily_statistics rows for the given year/month into a
