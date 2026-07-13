@@ -6,6 +6,7 @@ from app.core.services import get_otp_service
 from app.models import User
 from app.schemas import ConfirmResetRequest, ResetRequest, UserCreate, VerifyOTPRequest
 from app.services import OTPService
+from app.workers.tasks import send_pwreset_otp, send_reg_otp
 
 router = APIRouter(prefix="", tags=["OTP"])
 
@@ -18,7 +19,8 @@ async def send_otp(
     Endpoint to send an OTP (One-Time Password) for user registration.
     """
     otp = await otp_service.initiate_register(user)
-    return {"message": "OTP sent successfully", "otp": otp}
+    send_reg_otp.delay(user.email, otp)
+    return {"message": "OTP sent successfully"}
 
 
 @router.post("/register/verify", status_code=201)
@@ -42,7 +44,8 @@ async def initiate_reset_password(
     Endpoint to initiate the password reset by request OTP
     """
     otp = await otp_service.initiate_pwreset(reset_request.email)
-    return {"message": "OTP sent successfully", "otp": otp}
+    send_pwreset_otp.delay(reset_request.email, otp)
+    return {"message": "OTP sent successfully"}
 
 
 @router.post("/reset-password/verify")
