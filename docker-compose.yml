@@ -51,13 +51,13 @@ services:
       retries: 5
       start_period: 5s
 
-  otp_worker:
+  worker:
     build: .
 
     env_file:
       - .env
 
-    command: ["uv", "run", "--no-dev", "celery", "-A", "app.workers.tasks", "worker", "--loglevel=info", "-Q", "otp"]
+    command: ["uv", "run", "--no-dev", "celery", "-A", "app.workers.tasks", "worker", "--loglevel=info", "-Q", "otp,email"]
 
     depends_on:
       redis:
@@ -69,6 +69,28 @@ services:
       timeout: 5s
       retries: 5
       start_period: 5s
+
+  beat:
+    build: .
+
+    env_file:
+      - .env
+
+    command: ["uv", "run", "--no-dev", "celery", "-A", "app.workers.tasks", "beat", "--loglevel=info"]
+
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD", "celery", "-A", "app.workers.tasks", "inspect", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
 
 volumes:
   postgres-data:

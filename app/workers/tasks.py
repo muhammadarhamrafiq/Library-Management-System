@@ -1,7 +1,11 @@
-from celery import Celery
+import asyncio
 
+from celery import Celery
+from celery.schedules import crontab
+
+from app.core.database import SessionLocal
 from app.core.settings import settings
-from app.services.email_service import EmailService
+from app.services import EmailService, LoanService
 
 broker_url = f"redis://{settings.redis_host}:{settings.redis_port}/0"
 
@@ -46,3 +50,44 @@ def send_pwreset_otp(email: str, otp: str) -> None:
         otp (str): The one-time password to be sent.
     """
     email_service.send_pwreset_otp(email, otp)
+
+
+@app.task(
+    queue="email",
+)
+def send_overdue_email(email: str, loan_id: int, fine_amount: float) -> None:
+    """
+    Celery task to send overdue loan email to the user.
+
+    Args:
+        email (str): The recipient's email address.
+        loan_id (int): The ID of the overdue loan.
+        fine_amount (float): The fine amount for the overdue loan.
+    """
+    email_service.send_overdue_email(email, loan_id, fine_amount)
+
+
+@app.task(queue="maintenance")
+def process_overdue_loans():
+    asyncio.run(_process_overdue_loans())
+
+
+async def _process_overdue_loans():
+    async with SessionLocal() as session:
+        loan_service = LoanService(session)
+        overdue_loans = await loan_service.process_overdue_loans()
+
+        for loan in overdue_loans:
+            send_overdue_email.delay(
+                loan.user.email,
+                loan.id,
+                loan.fine_amount,
+            )
+
+
+app.conf.beat_schedule = {
+    "process-overdue-loans": {
+        "task": process_overdue_loans.name,
+        "schedule": crontab(hour=7, minute=0),
+    }
+}
