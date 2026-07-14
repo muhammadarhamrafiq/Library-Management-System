@@ -1,7 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react"
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom"
 import {
-  BookOpenText,
   ClipboardList,
   LayoutDashboard,
   LibraryBig,

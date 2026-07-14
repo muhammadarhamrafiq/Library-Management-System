@@ -36,3 +36,21 @@ export const newPasswordSchema = z
     path: ["confirm_password"],
   })
 export type NewPasswordFormValues = z.infer<typeof newPasswordSchema>
+
+export const profileUpdateSchema = z.object({
+  full_name: z.string().min(2, "Enter your full name"),
+  email: z.string().email("Enter a valid email"),
+})
+export type ProfileUpdateFormValues = z.infer<typeof profileUpdateSchema>
+
+export const changePasswordSchema = z
+  .object({
+    current_password: z.string().min(1, "Enter your current password"),
+    new_password: z.string().min(8, "At least 8 characters"),
+    confirm_password: z.string().min(1, "Confirm your new password"),
+  })
+  .refine((data) => data.new_password === data.confirm_password, {
+    message: "Passwords don't match",
+    path: ["confirm_password"],
+  })
+export type ChangePasswordFormValues = z.infer<typeof changePasswordSchema>
