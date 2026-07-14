@@ -9,9 +9,10 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { getErrorMessage } from "@/lib/errors"
-import { bookFormSchema, type BookFormValues } from "@/lib/validation/book.schemas"
+import { bookFormSchema } from "@/lib/validation/book.schemas"
 import { DEFAULT_BOOK_PAGE_SIZE } from "@/lib/bookFilters"
 import type { Book, BookCreate } from "@/types/book.types"
+import { z } from "zod"
 
 type FilterState = {
   search_query: string
@@ -37,18 +38,21 @@ const INITIAL_FILTERS: FilterState = {
   sortOrder: "asc",
 }
 
-const EMPTY_BOOK: BookFormValues = {
+type BookFormInput = z.input<typeof bookFormSchema>
+type BookFormOutput = z.output<typeof bookFormSchema>
+
+const EMPTY_BOOK: BookFormInput = {
   title: "",
   author: "",
   isbn: "",
   description: "",
-  price: null,
+  price: "",
   publisher: "",
-  published_year: null,
+  published_year: "",
   total_copies: 1,
 }
 
-function toPayload(values: BookFormValues): BookCreate {
+function toPayload(values: BookFormOutput): BookCreate {
   return {
     title: values.title,
     author: values.author,
@@ -61,15 +65,15 @@ function toPayload(values: BookFormValues): BookCreate {
   }
 }
 
-function asFormValues(book: Book): BookFormValues {
+function asFormValues(book: Book): BookFormInput {
   return {
     title: book.title,
     author: book.author,
     isbn: book.isbn ?? "",
     description: book.description ?? "",
-    price: book.price ?? null,
+    price: book.price ?? "",
     publisher: book.publisher ?? "",
-    published_year: book.published_year ?? null,
+    published_year: book.published_year ?? "",
     total_copies: book.total_copies,
   }
 }
@@ -85,7 +89,7 @@ export default function ManageBooksPage() {
   const [draftFilters, setDraftFilters] = useState<FilterState>(INITIAL_FILTERS)
   const [appliedFilters, setAppliedFilters] = useState<FilterState>(INITIAL_FILTERS)
 
-  const form = useForm<BookFormValues>({
+  const form = useForm<BookFormInput, unknown, BookFormOutput>({
     resolver: zodResolver(bookFormSchema),
     defaultValues: EMPTY_BOOK,
   })
@@ -140,7 +144,7 @@ export default function ManageBooksPage() {
     setPage(1)
   }
 
-  const saveBook = async (values: BookFormValues) => {
+  const saveBook = async (values: BookFormOutput) => {
     setIsSaving(true)
     try {
       const payload = toPayload(values)
