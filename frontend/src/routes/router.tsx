@@ -4,6 +4,8 @@ import { ProtectedRoute } from "./ProtectedRoute"
 import { RoleGuard } from "./RoleGuard"
 import { RootRedirect } from "./RootRedirect"
 
+import { DashboardShell } from "@/components/layout/DashboardShell"
+
 import LoginPage from "@/pages/public/LoginPage"
 import RegisterPage from "@/pages/public/RegisterPage"
 import RegisterVerifyPage from "@/pages/public/RegisterVerifyPage"
@@ -44,29 +46,34 @@ export const router = createBrowserRouter([
   {
     element: <ProtectedRoute />,
     children: [
-      { path: "/dashboard", element: <DashboardPage /> },
-      { path: "/profile", element: <ProfilePage /> },
-
-      // Member only
       {
-        element: <RoleGuard allowedRoles={["member"]} />,
-        children: [{ path: "/my-loans", element: <MyLoansPage /> }],
-      },
-
-      // Librarian + admin
-      {
-        element: <RoleGuard allowedRoles={["librarian", "admin"]} />,
+        element: <DashboardShell />,
         children: [
-          { path: "/manage/books", element: <ManageBooksPage /> },
-          { path: "/manage/books/deleted", element: <DeletedBooksPage /> },
-          { path: "/manage/loans", element: <ManageLoansPage /> },
-        ],
-      },
+          { path: "/dashboard", element: <DashboardPage /> },
+          { path: "/profile", element: <ProfilePage /> },
 
-      // Admin only
-      {
-        element: <RoleGuard allowedRoles={["admin"]} />,
-        children: [{ path: "/manage/users", element: <ManageUsersPage /> }],
+          // Member only
+          {
+            element: <RoleGuard allowedRoles={["member"]} />,
+            children: [{ path: "/my-loans", element: <MyLoansPage /> }],
+          },
+
+          // Librarian + admin
+          {
+            element: <RoleGuard allowedRoles={["librarian", "admin"]} />,
+            children: [
+              { path: "/manage/books", element: <ManageBooksPage /> },
+              { path: "/manage/books/deleted", element: <DeletedBooksPage /> },
+              { path: "/manage/loans", element: <ManageLoansPage /> },
+            ],
+          },
+
+          // Admin only
+          {
+            element: <RoleGuard allowedRoles={["admin"]} />,
+            children: [{ path: "/manage/users", element: <ManageUsersPage /> }],
+          },
+        ],
       },
     ],
   },
