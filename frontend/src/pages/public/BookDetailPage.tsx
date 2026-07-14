@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { Link, useParams } from "react-router-dom"
 import { toast } from "sonner"
-import { ArrowLeft, BookOpen, CalendarDays, Loader2, Mail, PencilLine, ShieldUser, Users } from "lucide-react"
+import { ArrowLeft, BookOpen, CalendarDays, Loader2, PencilLine, ShieldUser, Users } from "lucide-react"
 
 import { booksApi } from "@/api/books.api"
 import { loansApi } from "@/api/loans.api"
