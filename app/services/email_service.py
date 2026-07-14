@@ -1,4 +1,10 @@
-import time
+import resend
+
+from app.core.settings import settings
+
+resend.api_key = settings.resend_api_key
+
+FROM_EMAIL = "LMS <lms@mail.arhamrafiq.dev>"
 
 
 class EmailService:
@@ -10,9 +16,18 @@ class EmailService:
             email (str): The recipient's email address.
             otp (str): The one-time password to be sent.
         """
-        time.sleep(10)  # Simulate email sending delay
-        print(f"Sending registration OTP '{otp}' to email: {email}")
-        pass
+        resend.Emails.send(
+            {
+                "from": FROM_EMAIL,
+                "to": [email],
+                "subject": "Verify your email",
+                "html": f"""
+                    <p>Your verification code is:</p>
+                    <h2>{otp}</h2>
+                    <p>This code expires in 20 minutes.</p>
+                """,
+            }
+        )
 
     def send_pwreset_otp(self, email: str, otp: str) -> None:
         """
@@ -22,9 +37,19 @@ class EmailService:
             email (str): The recipient's email address.
             otp (str): The one-time password to be sent.
         """
-        time.sleep(10)  # Simulate email sending delay
-        print(f"Sending password reset OTP '{otp}' to email: {email}")
-        pass
+        resend.Emails.send(
+            {
+                "from": FROM_EMAIL,
+                "to": [email],
+                "subject": "Reset your password",
+                "html": f"""
+                    <p>Your password reset code is:</p>
+                    <h2>{otp}</h2>
+                    <p>This code expires in 20 minutes. If you didn't request
+                    this, you can safely ignore this email.</p>
+                """,
+            }
+        )
 
     def send_overdue_email(self, email: str, loan_id: int, fine_amount: float) -> None:
         """
@@ -35,9 +60,14 @@ class EmailService:
             loan_id (int): The ID of the overdue loan.
             fine_amount (float): The fine amount for the overdue loan.
         """
-        time.sleep(10)  # Simulate email sending delay
-        print(
-            f"Sending overdue loan email to {email} "
-            f"for loan ID {loan_id} with fine amount {fine_amount}"
+        resend.Emails.send(
+            {
+                "from": FROM_EMAIL,
+                "to": [email],
+                "subject": "Your library loan is overdue",
+                "html": f"""
+                    <p>Loan #{loan_id} is overdue.</p>
+                    <p>Current fine: ${fine_amount:.2f}</p>
+                """,
+            }
         )
-        pass

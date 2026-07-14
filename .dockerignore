@@ -13,3 +13,6 @@ __pycache__
 .env.*
 
 tests
+
+frontend/node_modules/
+frontend/dist/
