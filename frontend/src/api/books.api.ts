@@ -9,11 +9,11 @@ export const booksApi = {
       .get<PaginatedResponse<Book>>("/books", { params })
       .then((res) => res.data),
 
-  // also paginated — router only exposes search_query, skip/limit default
-  // server-side (0/10) since they aren't accepted as query params here
-  listDeleted: (search_query?: string) =>
+  // the backend currently only reads search_query, but the wrapper keeps the
+  // same pagination-friendly shape as the catalog/manage pages.
+  listDeleted: (params?: Pick<BookListParams, "search_query" | "skip" | "limit">) =>
     api
-      .get<PaginatedResponse<Book>>("/books/deleted", { params: { search_query } })
+      .get<PaginatedResponse<Book>>("/books/deleted", { params })
       .then((res) => res.data),
 
   getDeleted: (bookId: number) =>

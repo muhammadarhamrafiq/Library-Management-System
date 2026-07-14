@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from "react"
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom"
 import {
   ClipboardList,
+  BookOpenText,
   LayoutDashboard,
   LibraryBig,
   LogOut,
@@ -32,6 +33,7 @@ const NAV_GROUPS: NavGroup[] = [
     title: "Workspace",
     items: [
       { label: "Dashboard", href: "/dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
+      { label: "Book catalogue", href: "/books", icon: <BookOpenText className="h-4 w-4" /> },
       { label: "Profile", href: "/profile", icon: <UserCircle2 className="h-4 w-4" /> },
     ],
   },
