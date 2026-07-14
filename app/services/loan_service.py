@@ -326,3 +326,32 @@ class LoanService:
             "has_next": skip + limit < total_count,
             "has_previous": skip > 0,
         }
+
+    async def process_overdue_loans(self) -> list[Loan]:
+        """
+        Process overdue loans by updating their status and calculating fines.
+
+        This method checks for loans that are overdue and updates their status
+        to 'OVERDUE'. It also calculates the fine amount based on the number of
+        days late and the defined fine rate.
+
+        Returns:
+            None
+        """
+
+        result = await self._session.execute(
+            select(Loan).where(
+                Loan.status == LoanStatus.APPROVED,
+                Loan.due_date < datetime.now(UTC),
+            )
+        )
+        overdue_loans = result.scalars().all()
+
+        for loan in overdue_loans:
+            loan.status = LoanStatus.OVERDUE
+            days_late = (datetime.now(UTC) - loan.due_date).days
+            loan.fine_amount = Decimal(days_late) * FINE_PER_DAY_LATE
+
+        await self._session.commit()
+
+        return overdue_loans
