@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     redis_host: str
     redis_port: int
 
+    resend_api_key: str
+
     model_config: SettingsConfigDict = SettingsConfigDict(
         env_file=".env", case_sensitive=False, env_file_encoding="utf-8", extra="ignore"
     )
